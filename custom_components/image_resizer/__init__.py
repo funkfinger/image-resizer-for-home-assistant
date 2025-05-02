@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 from PIL import Image, UnidentifiedImageError
 
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, template
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util.file import write_utf8_file_atomic
 from homeassistant.components import http
@@ -44,7 +44,7 @@ _LOGGER = logging.getLogger(__name__)
 
 RESIZE_IMAGE_SCHEMA = vol.Schema(
     {
-        vol.Required(ATTR_SOURCE): cv.string,
+        vol.Required(ATTR_SOURCE): cv.template,  # Allow templates for source
         vol.Required(ATTR_DESTINATION): cv.string,
         vol.Optional(ATTR_WIDTH): cv.positive_int,
         vol.Optional(ATTR_HEIGHT): cv.positive_int,
@@ -63,7 +63,17 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     async def handle_resize_image(call: ServiceCall) -> None:
         """Handle the resize_image service call."""
-        source = call.data[ATTR_SOURCE]
+        # Get source and render template if needed
+        source_template = call.data[ATTR_SOURCE]
+        try:
+            source = template.render_complex(source_template, {"hass": hass})
+            if not isinstance(source, str):
+                _LOGGER.error("Template did not render to a string: %s", source)
+                return
+        except template.TemplateError as ex:
+            _LOGGER.error("Error rendering source template: %s", ex)
+            return
+
         destination = call.data[ATTR_DESTINATION]
         width = call.data.get(ATTR_WIDTH)
         height = call.data.get(ATTR_HEIGHT)

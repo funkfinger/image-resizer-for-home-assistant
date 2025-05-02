@@ -35,7 +35,7 @@ Resizes an image to the specified dimensions.
 
 | Parameter           | Type    | Required | Default   | Description                                                                                                                               |
 | ------------------- | ------- | -------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`            | string  | Yes      | -         | Path to the source image or HTTP/HTTPS URL. Can be a local file path or a URL (including Home Assistant media URLs).                      |
+| `source`            | string  | Yes      | -         | Path to the source image or HTTP/HTTPS URL. Can be a local file path or a URL (including Home Assistant media URLs). Supports templates.  |
 | `destination`       | string  | Yes      | -         | Path to save the resized image.                                                                                                           |
 | `width`             | integer | No       | -         | Target width in pixels. If not specified, it will be calculated based on the height and aspect ratio.                                     |
 | `height`            | integer | No       | -         | Target height in pixels. If not specified, it will be calculated based on the width and aspect ratio.                                     |
@@ -132,7 +132,7 @@ automation:
         quality: 75
 ```
 
-### Use with Media Player Album Art
+### Use with Media Player Album Art (Using Templates)
 
 ```yaml
 automation:
@@ -147,6 +147,24 @@ automation:
         destination: /config/www/current_album_art.jpg
         width: 400
         quality: 90
+```
+
+### Using Templates for Dynamic Sources
+
+```yaml
+# Resize the entity picture of the currently playing media player
+service: image_resizer.resize_image
+data:
+  source: >
+    {% set player = states.media_player | selectattr('attributes.entity_picture', 'defined') | selectattr('state', 'eq', 'playing') | list | first %}
+    {% if player %}
+      {{ 'http://homeassistant.local:8123' + player.attributes.entity_picture }}
+    {% else %}
+      /config/www/default_image.jpg
+    {% endif %}
+  destination: /config/www/now_playing.jpg
+  width: 300
+  height: 300
 ```
 
 ## Troubleshooting

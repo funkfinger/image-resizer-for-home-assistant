@@ -14,6 +14,7 @@ This custom component for Home Assistant provides a service to resize images. It
 - Multiple resizing methods
 - Support for HTTP/HTTPS URLs as source images
 - Support for Home Assistant media URLs
+- Template support for dynamic source paths/URLs
 
 ## Installation
 
@@ -56,6 +57,17 @@ data:
   destination: /config/www/album_art.jpg
   width: 300
   height: 300
+  quality: 90
+```
+
+### Template Example
+
+```yaml
+service: image_resizer.resize_image
+data:
+  source: "{{ 'http://homeassistant.local:8123' + states.media_player.living_room.attributes.entity_picture }}"
+  destination: /config/www/current_album_art.jpg
+  width: 400
   quality: 90
 ```
 

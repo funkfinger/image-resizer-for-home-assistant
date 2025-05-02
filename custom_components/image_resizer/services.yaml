@@ -4,11 +4,11 @@ resize_image:
   fields:
     source:
       name: Source
-      description: Path to the source image or HTTP/HTTPS URL.
+      description: Path to the source image or HTTP/HTTPS URL. Supports templates.
       required: true
-      example: "/config/www/original.jpg or http://homeassistant.local:8123/api/media_player_proxy/media_player.living_room?token=xyz"
+      example: "/config/www/original.jpg or {{ 'http://homeassistant.local:8123' + states.media_player.living_room.attributes.entity_picture }}"
       selector:
-        text:
+        template:
     destination:
       name: Destination
       description: Path to save the resized image.
