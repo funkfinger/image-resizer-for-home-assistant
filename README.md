@@ -3,6 +3,8 @@
 This custom component for Home Assistant provides a service to resize images. It's useful for automations that need to process images, such as creating thumbnails, optimizing images for display, or preparing images for other services.
 
 > **Note:** This project was entirely created by AI (Augment Code powered by Claude 3.7 Sonnet) with a human merely guiding the AI model through the development process.
+>
+> **Warning:** This is very much an early release and since it is only used for the creator's single use-case, it likely won't work for other's needs. The project is a test case for "vibe coding" and shouldn't be considered stable.
 
 ## Features
 
