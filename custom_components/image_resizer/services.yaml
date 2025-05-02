@@ -1,0 +1,83 @@
+resize_image:
+  name: Resize image
+  description: Resize an image to the specified dimensions.
+  fields:
+    source:
+      name: Source
+      description: Path to the source image or HTTP/HTTPS URL.
+      required: true
+      example: "/config/www/original.jpg or http://homeassistant.local:8123/api/media_player_proxy/media_player.living_room?token=xyz"
+      selector:
+        text:
+    destination:
+      name: Destination
+      description: Path to save the resized image.
+      required: true
+      example: "/config/www/resized.jpg"
+      selector:
+        text:
+    width:
+      name: Width
+      description: Target width in pixels. If not specified, it will be calculated based on the height and aspect ratio.
+      required: false
+      example: 800
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    height:
+      name: Height
+      description: Target height in pixels. If not specified, it will be calculated based on the width and aspect ratio.
+      required: false
+      example: 600
+      selector:
+        number:
+          min: 1
+          max: 10000
+          mode: box
+    quality:
+      name: Quality
+      description: JPEG quality (1-100). Only applies to JPEG and WEBP formats.
+      required: false
+      default: 85
+      example: 90
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: slider
+    format:
+      name: Format
+      description: Output format. If not specified, it will be determined from the destination file extension.
+      required: false
+      example: "JPEG"
+      selector:
+        select:
+          options:
+            - "JPEG"
+            - "PNG"
+            - "WEBP"
+            - "BMP"
+            - "GIF"
+    keep_aspect_ratio:
+      name: Keep aspect ratio
+      description: Whether to maintain the original aspect ratio.
+      required: false
+      default: true
+      selector:
+        boolean:
+    method:
+      name: Method
+      description: Resizing method to use.
+      required: false
+      default: "lanczos"
+      selector:
+        select:
+          options:
+            - "nearest"
+            - "box"
+            - "bilinear"
+            - "hamming"
+            - "bicubic"
+            - "lanczos"

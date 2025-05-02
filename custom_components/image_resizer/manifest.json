@@ -1,0 +1,10 @@
+{
+  "domain": "image_resizer",
+  "name": "Image Resizer",
+  "documentation": "https://github.com/home-assistant/example-custom-config/tree/master/custom_components/image_resizer",
+  "dependencies": ["http"],
+  "codeowners": [],
+  "requirements": ["pillow>=9.0.0", "aiohttp>=3.8.0"],
+  "iot_class": "local_polling",
+  "version": "0.1.0"
+}
