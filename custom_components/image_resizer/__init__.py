@@ -21,6 +21,7 @@ from homeassistant.helpers import config_validation as cv, template
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util.file import write_utf8_file_atomic
 from homeassistant.components import http
+import aiohttp
 
 from .const import (
     DOMAIN,
@@ -150,17 +151,17 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def download_image(hass: HomeAssistant, url: str) -> Optional[bytes]:
     """Download an image from a URL."""
     try:
-        session = hass.helpers.aiohttp_client.async_get_clientsession()
+        # Create a new aiohttp session instead of using the helper
         timeout = aiohttp.ClientTimeout(total=30)  # 30 seconds timeout
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    _LOGGER.error(
+                        "Failed to download image, status code: %s", response.status
+                    )
+                    return None
 
-        async with session.get(url, timeout=timeout) as response:
-            if response.status != 200:
-                _LOGGER.error(
-                    "Failed to download image, status code: %s", response.status
-                )
-                return None
-
-            return await response.read()
+                return await response.read()
 
     except (aiohttp.ClientError, asyncio.TimeoutError) as err:
         _LOGGER.error("Error downloading image: %s", err)
