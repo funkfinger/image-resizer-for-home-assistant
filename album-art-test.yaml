@@ -1,0 +1,118 @@
+esphome:
+  name: "album-art-test"
+  friendly_name: Album Art Test
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret album-art-test-key
+
+# Enable OTA updates
+ota:
+  - platform: esphome
+    id: my_ota
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Album-Art-Test Fallback Hotspot"
+    password: !secret ap_wifi_pw
+
+captive_portal:
+
+external_components:
+  - source: github://TillFleisch/ESPHome-HUB75-MatrixDisplayWrapper@main
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 8MB
+  framework:
+    type: arduino
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+logger:
+
+text_sensor:
+  - platform: homeassistant
+    id: playing_track_artwork
+    entity_id: sensor.workroom_album_artwork_url_text
+    on_value:
+      then:
+        - homeassistant.action:
+            action: image_resizer.resize_image
+            data:
+              quality: "85"
+              keep_aspect_ratio: "true"
+              method: lanczos
+              source: "{{ x }}"
+              width: "64"
+              height: "64"
+              format: JPEG
+              destination: /config/www/resized.jpg
+        - delay: 3s
+        - component.update: album_image
+        - lambda: |-
+            ESP_LOGD("main", "Value of x: %s", x.c_str());  // Correct logging
+            ESP_LOGD("album_art", "id(playing_track_artwork): %s", id(playing_track_artwork).state.c_str());
+
+http_request:
+  verify_ssl: false
+
+online_image:
+  - url: "http://homeassistant.local:8123/local/resized.jpg"
+    format: jpeg
+    id: album_image
+    type: RGB
+    # update_interval: 10s
+    on_download_finished:
+      component.update: album_artwork_display
+
+font:
+  # gfonts://family[@weight]
+  - file: "gfonts://Roboto"
+    id: roboto
+    size: 10
+
+display:
+  - platform: hub75_matrix_display
+    id: album_artwork_display
+    width: 64
+    height: 64
+
+    R1_pin: 42
+    B1_pin: 41
+    R2_pin: 40
+    B2_pin: 39
+    A_pin: 38
+    C_pin: 12
+    CLK_pin: 13
+    OE_pin: 14
+    G1_pin: 6
+    G2_pin: 15
+    E_pin: 16
+    B_pin: 17
+    D_pin: 18
+    LAT_pin: 8
+
+    lambda: |-
+      // Draw the image album_image at position [x=0,y=0]
+      it.image(0, 0, id(album_image));
+
+switch:
+  - platform: hub75_matrix_display
+    matrix_id: album_artwork_display
+    name: "Power"
+    id: power
+    restore_mode: ALWAYS_ON
+
+number:
+  - platform: hub75_matrix_display
+    matrix_id: album_artwork_display
+    name: "Brightness"
