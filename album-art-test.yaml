@@ -1,17 +1,41 @@
+substitutions:
+  device_name: album-art-living-room
+  device_friendly_name: Album Art - Living Room
+  device_board: esp32-s3-devkitc-1
+  ha_hostname: homeassistant.local # Home Assistant hostname
+
 esphome:
-  name: "album-art-test"
-  friendly_name: Album Art Test
+  name: "${device_name}"
+  friendly_name: "${device_friendly_name}"
+
+  platformio_options:
+    board_build.arduino.memory_type: dio_opi
+
+  on_boot:
+    priority: 90
+    then:
+      - output.turn_off: gnd1
+      - output.turn_off: gnd2
+
+# Global variables
+globals:
+  - id: last_artwork_url
+    type: std::string
+    restore_value: no
+    initial_value: '""'
 
 # Enable Home Assistant API
 api:
   encryption:
-    key: !secret album-art-test-key
+    key: !secret "album-art-living-room-key"
 
 # Enable OTA updates
 ota:
   - platform: esphome
-    id: my_ota
     password: !secret ota_password
+
+# Enable safe mode
+safe_mode:
 
 wifi:
   ssid: !secret wifi_ssid
@@ -19,16 +43,20 @@ wifi:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Album-Art-Test Fallback Hotspot"
+    ssid: "${device_friendly_name} Hotspot"
     password: !secret ap_wifi_pw
 
 captive_portal:
+
+# Enable web server for easy debugging
+web_server:
+  port: 80
 
 external_components:
   - source: github://TillFleisch/ESPHome-HUB75-MatrixDisplayWrapper@main
 
 esp32:
-  board: esp32-s3-devkitc-1
+  board: "${device_board}"
   flash_size: 8MB
   framework:
     type: arduino
@@ -37,45 +65,86 @@ psram:
   mode: octal
   speed: 80MHz
 
+# Enhanced logging for troubleshooting
 logger:
+  level: DEBUG
+  logs:
+    http_request: DEBUG
+    online_image: DEBUG
+
+# Add a timer for retry mechanism - only triggers if no image is available
+interval:
+  - interval: 60s # Increased to 60 seconds to reduce frequency
+    id: retry_timer
+    then:
+      - if:
+          condition:
+            lambda: "return id(album_image).get_width() == 0 || id(album_image).get_height() == 0;"
+          then:
+            - logger.log: "No image available, retrying download"
+            - component.update: album_image
 
 text_sensor:
   - platform: homeassistant
     id: playing_track_artwork
-    entity_id: sensor.workroom_album_artwork_url_text
+    entity_id: sensor.album_artwork_url_living_room
     on_value:
       then:
+        # Add validation before processing
+        - lambda: |-
+            if (id(playing_track_artwork).state.empty()) {
+              ESP_LOGW("album_art", "Empty URL received, skipping update");
+              return;
+            }
+
+            // Check if this is the same URL we already processed
+            if (id(last_artwork_url) == id(playing_track_artwork).state) {
+              ESP_LOGD("album_art", "URL unchanged, skipping update");
+              return;
+            }
+
+            // Store the new URL
+            id(last_artwork_url) = id(playing_track_artwork).state;
+            ESP_LOGD("album_art", "New artwork URL: %s", id(playing_track_artwork).state.c_str());
         - homeassistant.action:
             action: image_resizer.resize_image
             data:
-              quality: "85"
-              keep_aspect_ratio: "true"
+              quality: "95"
+              # keep_aspect_ratio: "true"
               method: lanczos
-              source: "{{ x }}"
+              # Use the proper template syntax for Home Assistant
+              source: "{{ states('sensor.album_artwork_url_living_room') }}"
               width: "64"
               height: "64"
               format: JPEG
-              destination: /config/www/resized.jpg
+              destination: "/config/www/living-room.jpg"
+        # Add more logging for debugging
+        - logger.log: "Resizing image request sent to Home Assistant"
         - delay: 3s
         - component.update: album_image
         - lambda: |-
-            ESP_LOGD("main", "Value of x: %s", x.c_str());  // Correct logging
-            ESP_LOGD("album_art", "id(playing_track_artwork): %s", id(playing_track_artwork).state.c_str());
+            ESP_LOGD("album_art", "Updating display with new image");
+            ESP_LOGD("album_art", "Current artwork URL: %s", id(playing_track_artwork).state.c_str());
 
+# Enhanced HTTP request configuration
 http_request:
   verify_ssl: false
+  timeout: 10s
+  useragent: ESPHome/Album-Art
 
+# Improved online image component with error handling
 online_image:
-  - url: "http://homeassistant.local:8123/local/resized.jpg"
+  - url: "http://${ha_hostname}:8123/local/living-room.jpg"
     format: jpeg
     id: album_image
     type: RGB
-    # update_interval: 10s
+    update_interval: never # Only update when explicitly requested
     on_download_finished:
-      component.update: album_artwork_display
+      then:
+        - logger.log: "Image downloaded successfully"
+        - component.update: album_artwork_display
 
 font:
-  # gfonts://family[@weight]
   - file: "gfonts://Roboto"
     id: roboto
     size: 10
@@ -86,33 +155,56 @@ display:
     width: 64
     height: 64
 
-    R1_pin: 42
-    B1_pin: 41
-    R2_pin: 40
-    B2_pin: 39
-    A_pin: 38
-    C_pin: 12
-    CLK_pin: 13
-    OE_pin: 14
-    G1_pin: 6
-    G2_pin: 15
-    E_pin: 16
-    B_pin: 17
-    D_pin: 18
-    LAT_pin: 8
+    # esp32-s3 devkit board pinout
+    R1_pin: 4
+    G1_pin: 1
+
+    B1_pin: 5
+    #gnd pin 2
+
+    R2_pin: 6
+    G2_pin: 42
+
+    B2_pin: 7
+    E_pin: 41
+
+    A_pin: 15
+    B_pin: 40
+
+    C_pin: 16
+    D_pin: 39
+
+    CLK_pin: 17
+    LAT_pin: 38
+
+    OE_pin: 18
+    #gnd pin 9
 
     lambda: |-
       // Draw the image album_image at position [x=0,y=0]
       it.image(0, 0, id(album_image));
 
+      // Add a fallback message if the image is not available
+      if (id(album_image).get_width() == 0 || id(album_image).get_height() == 0) {
+        it.printf(2, 32, id(roboto), "No Album Art");
+      }
+
+output:
+  - platform: gpio
+    pin: 2
+    id: gnd1
+  - platform: gpio
+    pin: 9
+    id: gnd2
+
 switch:
   - platform: hub75_matrix_display
     matrix_id: album_artwork_display
-    name: "Power"
+    name: "${device_name} Power"
     id: power
     restore_mode: ALWAYS_ON
 
 number:
   - platform: hub75_matrix_display
     matrix_id: album_artwork_display
-    name: "Brightness"
+    name: "${device_name} Brightness"
