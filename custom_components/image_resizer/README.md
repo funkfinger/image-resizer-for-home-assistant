@@ -45,6 +45,7 @@ Resizes an image to the specified dimensions.
 | `format`            | string  | No       | -         | Output format. If not specified, it will be determined from the destination file extension. Options: "JPEG", "PNG", "WEBP", "BMP", "GIF". |
 | `keep_aspect_ratio` | boolean | No       | true      | Whether to maintain the original aspect ratio.                                                                                            |
 | `method`            | string  | No       | "lanczos" | Resizing method to use. Options: "nearest", "box", "bilinear", "hamming", "bicubic", "lanczos".                                           |
+| `bmp_16bit`         | boolean | No       | false     | Save BMP files in 16-bit format (RGB565). Only applies to BMP format.                                                                     |
 
 **Note:** At least one of `width` or `height` must be specified.
 
@@ -91,6 +92,18 @@ data:
   width: 800
   format: WEBP
   quality: 90
+```
+
+### Save as 16-bit BMP
+
+```yaml
+service: image_resizer.resize_image
+data:
+  source: /config/www/original.jpg
+  destination: /config/www/image.bmp
+  width: 800
+  format: BMP
+  bmp_16bit: true
 ```
 
 ### Resize Without Maintaining Aspect Ratio

@@ -13,6 +13,7 @@ This custom component for Home Assistant provides a service to resize images. It
 - Support for multiple image formats (JPEG, PNG, WEBP, BMP, GIF)
 - Support for animated GIFs
 - Quality control for JPEG and WEBP formats
+- Support for 16-bit BMP files
 - Multiple resizing methods
 - Support for HTTP/HTTPS URLs as source images
 - Support for Home Assistant media URLs
@@ -71,6 +72,18 @@ data:
   destination: /config/www/current_album_art.jpg
   width: 400
   quality: 90
+```
+
+### 16-bit BMP Example
+
+```yaml
+service: image_resizer.resize_image
+data:
+  source: /config/www/original.jpg
+  destination: /config/www/image.bmp
+  width: 800
+  format: BMP
+  bmp_16bit: true
 ```
 
 For more examples and detailed documentation, see the [component README](custom_components/image_resizer/README.md).

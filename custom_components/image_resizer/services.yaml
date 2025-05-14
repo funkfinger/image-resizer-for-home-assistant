@@ -81,3 +81,10 @@ resize_image:
             - "hamming"
             - "bicubic"
             - "lanczos"
+    bmp_16bit:
+      name: 16-bit BMP
+      description: Save BMP files in 16-bit format (RGB565). Only applies to BMP format.
+      required: false
+      default: false
+      selector:
+        boolean:

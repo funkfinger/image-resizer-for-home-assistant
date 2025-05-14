@@ -34,6 +34,7 @@ from .const import (
     ATTR_FORMAT,
     ATTR_KEEP_ASPECT_RATIO,
     ATTR_METHOD,
+    ATTR_BMP_16BIT,
     DEFAULT_QUALITY,
     DEFAULT_KEEP_ASPECT_RATIO,
     DEFAULT_METHOD,
@@ -55,6 +56,7 @@ RESIZE_IMAGE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_FORMAT): vol.In(SUPPORTED_FORMATS),
         vol.Optional(ATTR_KEEP_ASPECT_RATIO, default=DEFAULT_KEEP_ASPECT_RATIO): cv.boolean,
         vol.Optional(ATTR_METHOD, default=DEFAULT_METHOD): vol.In(RESIZE_METHODS),
+        vol.Optional(ATTR_BMP_16BIT, default=False): cv.boolean,
     }
 )
 
@@ -82,6 +84,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         output_format = call.data.get(ATTR_FORMAT)
         keep_aspect_ratio = call.data.get(ATTR_KEEP_ASPECT_RATIO, DEFAULT_KEEP_ASPECT_RATIO)
         method = call.data.get(ATTR_METHOD, DEFAULT_METHOD)
+        bmp_16bit = call.data.get(ATTR_BMP_16BIT, False)
 
         # Validate that at least one of width or height is provided
         if width is None and height is None:
@@ -116,6 +119,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                     output_format,
                     keep_aspect_ratio,
                     method,
+                    bmp_16bit,
                 )
             else:
                 # Ensure source path is absolute for local files
@@ -133,6 +137,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                     output_format,
                     keep_aspect_ratio,
                     method,
+                    bmp_16bit,
                 )
 
             _LOGGER.info(
@@ -177,6 +182,7 @@ def resize_image_from_bytes(
     output_format: Optional[str] = None,
     keep_aspect_ratio: bool = DEFAULT_KEEP_ASPECT_RATIO,
     method: str = DEFAULT_METHOD,
+    bmp_16bit: bool = False,
 ) -> None:
     """Resize an image from bytes data using Pillow."""
     try:
@@ -214,6 +220,14 @@ def resize_image_from_bytes(
             save_kwargs = {}
             if output_format in ["JPEG", "WEBP"]:
                 save_kwargs["quality"] = quality
+
+            # Handle 16-bit BMP
+            if output_format == "BMP" and bmp_16bit:
+                # Convert to RGB mode if not already
+                if resized_img.mode != "RGB":
+                    resized_img = resized_img.convert("RGB")
+                # Save as 16-bit BMP (R5G6B5 format)
+                save_kwargs["bits"] = 16
 
             # Preserve animation for GIFs if possible
             if output_format == "GIF" and getattr(img, "is_animated", False):
@@ -253,6 +267,7 @@ def resize_image(
     output_format: Optional[str] = None,
     keep_aspect_ratio: bool = DEFAULT_KEEP_ASPECT_RATIO,
     method: str = DEFAULT_METHOD,
+    bmp_16bit: bool = False,
 ) -> None:
     """Resize an image using Pillow."""
     try:
@@ -290,6 +305,14 @@ def resize_image(
             save_kwargs = {}
             if output_format in ["JPEG", "WEBP"]:
                 save_kwargs["quality"] = quality
+
+            # Handle 16-bit BMP
+            if output_format == "BMP" and bmp_16bit:
+                # Convert to RGB mode if not already
+                if resized_img.mode != "RGB":
+                    resized_img = resized_img.convert("RGB")
+                # Save as 16-bit BMP (R5G6B5 format)
+                save_kwargs["bits"] = 16
 
             # Preserve animation for GIFs if possible
             if output_format == "GIF" and getattr(img, "is_animated", False):

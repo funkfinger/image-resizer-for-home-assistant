@@ -14,6 +14,7 @@ ATTR_QUALITY = "quality"
 ATTR_FORMAT = "format"
 ATTR_KEEP_ASPECT_RATIO = "keep_aspect_ratio"
 ATTR_METHOD = "method"
+ATTR_BMP_16BIT = "bmp_16bit"
 
 # Default values
 DEFAULT_QUALITY = 85
