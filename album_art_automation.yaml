@@ -1,0 +1,22 @@
+automation:
+  - alias: "Convert Album Art to JPEG for ESPHome Display"
+    description: "Converts media player album art to JPEG format for efficient display on ESP32-S3"
+    trigger:
+      - platform: state
+        entity_id: media_player.workroom  # Replace with your actual media player entity
+        attribute: entity_picture
+    condition:
+      - condition: template
+        value_template: "{{ trigger.to_state.attributes.entity_picture is defined and trigger.to_state.attributes.entity_picture != None }}"
+    action:
+      - service: image_resizer.resize_image
+        data:
+          source: "{{ 'http://homeassistant.local:8123' + trigger.to_state.attributes.entity_picture }}"
+          destination: "/config/www/album-art-workroom.jpg"
+          width: 320  # Adjust to the size your display needs
+          height: 240  # Adjust to the size your display needs
+          format: "JPEG"
+          quality: 85
+      - service: homeassistant.update_entity
+        target:
+          entity_id: media_player.workroom

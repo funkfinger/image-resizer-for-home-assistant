@@ -1,0 +1,63 @@
+esphome:
+  name: display-panel
+  friendly_name: Display Panel
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "YOUR_ENCRYPTION_KEY"
+
+ota:
+  password: "YOUR_OTA_PASSWORD"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Display Panel Fallback Hotspot"
+    password: "YOUR_FALLBACK_PASSWORD"
+
+captive_portal:
+
+# Example display configuration - adjust for your specific display
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+display:
+  - platform: ili9341
+    model: TFT 2.4
+    cs_pin: GPIO5
+    dc_pin: GPIO21
+    reset_pin: GPIO22
+    rotation: 0
+    lambda: |-
+      if (id(album_art).get_width() > 0) {
+        // Draw the album art
+        it.image(0, 0, id(album_art));
+      } else {
+        // Draw a fallback if no album art is available
+        it.rectangle(0, 0, 320, 240, COLOR_BLACK);
+        it.print(10, 110, id(my_font), COLOR_WHITE, "No Album Art");
+      }
+
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: my_font
+    size: 20
+
+# Online image component to fetch the album art
+online_image:
+  id: album_art
+  url: http://homeassistant.local:8123/local/album-art-workroom.jpg
+  refresh: 30s  # Adjust as needed
